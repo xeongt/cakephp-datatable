@@ -1,5 +1,11 @@
-# CakePHP DataTable Plugin
-DataTable is a cakephp plugin for [JQuery DataTables](http://datatables.net/).
+# CakePHP DataTable Plugin with some improvements 
+
+If you...
+
+- have problems to disable searcheable fields
+- have problems with SQL Server DS and pagination
+
+you would clone this fork of DataTable is a cakephp plugin for [JQuery DataTables](http://datatables.net/).
 
 # Requirements
 * CakePHP 2.2 or higher
