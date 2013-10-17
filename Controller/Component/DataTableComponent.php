@@ -110,6 +110,8 @@ class DataTableComponent extends PaginatorComponent {
 		parent::initialize($controller);
 		$property = $controller->request->is('get') ? 'query' : 'data';
 		$this->_params = $controller->request->$property;
+
+
 	}
 
 /**
@@ -143,11 +145,14 @@ class DataTableComponent extends PaginatorComponent {
  * @param mixed $scope
  */
 	public function process($object = null, $scope = array()) {
+
 		if (is_array($object)) {
 			$scope = $object;
 			$object = null;
 		}
+
 		$settings = $this->_parseSettings($object);
+
 		if (isset($settings['scope'])) {
 			$scope = array_merge($settings['scope'], $scope);
 		}
@@ -159,6 +164,8 @@ class DataTableComponent extends PaginatorComponent {
 				'conditions', 'columns', 'trigger', 'triggerAction',  'viewVar',  'maxLimit'
 			)
 		);
+
+
 		$total = $this->_object->find('count', $query);
 
 		$this->_sort($settings);
@@ -214,9 +221,21 @@ class DataTableComponent extends PaginatorComponent {
 		if (!isset($this->_parsed[$alias])) {
 			$settings = $this->getDefaults($alias);
 			$this->_columns[$alias] = array();
+
+			$colIndex = 0;
+
 			foreach($settings['columns'] as $field => $options) {
+
 				$useField = !is_null($options);
+
+				$this->log( $this->_params );
+
 				$enabled = (!isset($options['useField']) || $options['useField']);
+
+				// fix para que respete los campos de busqueda solo cuando se indiquen
+
+				$searchable = ( @$this->_params['bSearchable_' . $colIndex] == 'true' || @$this->_params['bSearchable_' . $colIndex] == '1' ? true : false);
+
 				if (is_numeric($field)) {
 					$field = $options;
 					$options = array();
@@ -225,26 +244,38 @@ class DataTableComponent extends PaginatorComponent {
 					$enabled = $options;
 					$options = array();
 				}
+
 				$label = Inflector::humanize($field);
 				if (is_string($options)) {
 					$label = $options;
 					$options = array();
 				}
+
 				$defaults = array(
 					'useField' => $useField,
 					'label' => $label,
 					'bSortable' => $enabled,
-					'bSearchable' => $enabled,
+					'bSearchable' => $searchable,
 				);
+
 				$options = array_merge($defaults, (array)$options);
 				$column = ($options['useField']) ? $this->_toColumn($alias, $field) : $field;
 				$this->_columns[$alias][$column] = $options;
+
 				if ($options['useField']) {
 					$settings['fields'][] = $column;
 				}
+
+				$this->log($colIndex);
+				$this->log($options);
+
+				$colIndex++;
 			}
+
+
 			$this->_columnKeys[$alias] = array_keys($this->_columns[$alias]);
 			$this->_parsed[$alias] = $settings;
+
 			return $settings;
 		}
 		return $this->_parsed[$alias];
@@ -303,24 +334,37 @@ class DataTableComponent extends PaginatorComponent {
 	protected function _search(&$settings) {
 		$i = 0;
 		$conditions = array();
+
 		foreach($this->_columns[$this->_object->alias] as $column => $options) {
+
 			if ($options['useField']) {
+
 				$searchable = $options['bSearchable'];
+
 				if ($searchable !== false) {
+
 					$searchKey = "sSearch_$i";
+
 					$searchTerm = $columnSearchTerm = null;
+
 					if (!empty($this->_params['sSearch'])) {
 						$searchTerm = $this->_params['sSearch'];
 					}
 					if (!empty($this->_params[$searchKey])) {
 						$columnSearchTerm = $this->_params[$searchKey];
 					}
+
+
 					if (is_string($searchable) && is_callable(array($this->_object, $searchable))) {
+
 						$result = $this->_object->$searchable($column, $searchTerm, $columnSearchTerm, $conditions);
+
 						if (is_array($result)) {
 							$conditions = $result;
 						}
-					} else {
+					}
+					else {
+
 						if ($searchTerm) {
 							$conditions[] = array("$column LIKE" => '%' . $this->_params['sSearch'] . '%');
 						}
